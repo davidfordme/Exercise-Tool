@@ -29,6 +29,7 @@ export type ActiveWorkout = {
 export type PersistedState = {
   catalog: ExerciseDefinition[]
   routine: RoutineItem[]
-  completedDates: string[]
+  completions: Record<string, number>
+  dailySets: number
   activeWorkout: ActiveWorkout | null
 }

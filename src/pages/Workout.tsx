@@ -124,7 +124,10 @@ export function Workout() {
         <section className="finish-card">
           <p className="eyebrow">Nice work</p>
           <h1>Circuit complete</h1>
-          <p className="muted">Log the session to keep your streak, or add another exercise first.</p>
+          <p className="muted">
+            The set is logged from when you started, even if you finish after midnight. Complete it, or
+            add another exercise first.
+          </p>
           <ol className="preview-list">
             {activeWorkout.items.map((item, index) => {
               const step = getExercise(item.exerciseId)

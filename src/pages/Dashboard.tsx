@@ -7,8 +7,10 @@ export function Dashboard() {
   const navigate = useNavigate()
   const {
     routine,
-    completedDates,
+    completions,
+    dailySets,
     activeWorkout,
+    todayCount,
     todayCompleted,
     streak,
     longest,
@@ -20,6 +22,9 @@ export function Dashboard() {
     if (!activeWorkout) startWorkout()
     navigate('/workout')
   }
+
+  const remainingSets = Math.max(0, dailySets - todayCount)
+  const setsLabel = dailySets === 1 ? 'set' : 'sets'
 
   return (
     <div className="page dashboard">
@@ -42,7 +47,7 @@ export function Dashboard() {
         </div>
       </section>
 
-      <WeekStrip completedDates={completedDates} />
+      <WeekStrip completions={completions} dailySets={dailySets} />
 
       <section className="today-card">
         <div>
@@ -50,14 +55,24 @@ export function Dashboard() {
           <h2>{activeWorkout ? 'Workout in progress' : todayCompleted ? 'Workout complete' : 'Core circuit'}</h2>
           <p className="muted">
             {routine.length} {routine.length === 1 ? 'exercise' : 'exercises'}
+            {dailySets > 1 ? ` · ${todayCount} of ${dailySets} ${setsLabel}` : ''}
             {routine[0] ? ` · starts with ${getExercise(routine[0].exerciseId)?.name ?? 'your first move'}` : ''}
           </p>
         </div>
         <button type="button" className="button primary" onClick={handleStart} disabled={routine.length === 0 && !activeWorkout}>
-          {activeWorkout ? 'Resume' : todayCompleted ? 'Go again' : 'Start workout'}
+          {activeWorkout ? 'Resume' : todayCompleted ? 'Go again' : todayCount > 0 ? 'Start next set' : 'Start workout'}
         </button>
         {todayCompleted ? (
-          <p className="done-note">Logged for today. Extra sessions will not change the streak.</p>
+          <p className="done-note">
+            {dailySets > 1 ? `${dailySets} of ${dailySets} sets logged for today.` : 'Logged for today.'}
+            {' '}Extra sessions will not change the streak.
+          </p>
+        ) : dailySets > 1 ? (
+          <p className="done-note">
+            {todayCount > 0
+              ? `${remainingSets} more ${remainingSets === 1 ? 'set' : 'sets'} to earn today's streak.`
+              : `Complete ${dailySets} sets today to earn the streak.`}
+          </p>
         ) : null}
       </section>
 

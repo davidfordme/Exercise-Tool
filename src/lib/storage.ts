@@ -35,11 +35,34 @@ function isActiveWorkout(value: unknown): value is ActiveWorkout {
   )
 }
 
+function parseCompletions(parsed: Record<string, unknown>): Record<string, number> {
+  if (isRecord(parsed.completions)) {
+    const next: Record<string, number> = {}
+    for (const [date, count] of Object.entries(parsed.completions)) {
+      if (typeof count === 'number' && Number.isFinite(count) && count > 0) {
+        next[date] = Math.floor(count)
+      }
+    }
+    if (Object.keys(next).length > 0) return next
+  }
+
+  if (Array.isArray(parsed.completedDates)) {
+    const next: Record<string, number> = {}
+    for (const value of parsed.completedDates) {
+      if (typeof value === 'string') next[value] = Math.max(next[value] ?? 0, 1)
+    }
+    return next
+  }
+
+  return {}
+}
+
 export function defaultState(): PersistedState {
   return {
     catalog: DEFAULT_CATALOG,
     routine: DEFAULT_ROUTINE,
-    completedDates: [],
+    completions: {},
+    dailySets: 1,
     activeWorkout: null,
   }
 }
@@ -57,16 +80,17 @@ export function loadState(): PersistedState {
     const routine = Array.isArray(parsed.routine)
       ? parsed.routine.filter(isRoutineItem)
       : DEFAULT_ROUTINE
-    const completedDates = Array.isArray(parsed.completedDates)
-      ? parsed.completedDates.filter((value): value is string => typeof value === 'string')
-      : []
-    const activeWorkout = isActiveWorkout(parsed.activeWorkout) ? parsed.activeWorkout : null
+    const dailySets =
+      typeof parsed.dailySets === 'number' && parsed.dailySets >= 1
+        ? Math.floor(parsed.dailySets)
+        : 1
 
     return {
       catalog,
       routine: routine.length > 0 ? routine : DEFAULT_ROUTINE,
-      completedDates: [...new Set(completedDates)].sort(),
-      activeWorkout,
+      completions: parseCompletions(parsed),
+      dailySets,
+      activeWorkout: isActiveWorkout(parsed.activeWorkout) ? parsed.activeWorkout : null,
     }
   } catch {
     return defaultState()

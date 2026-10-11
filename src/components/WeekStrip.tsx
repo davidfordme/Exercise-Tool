@@ -1,18 +1,21 @@
 import { currentWeekKeys, todayKey, weekdayLabel } from '../lib/dates'
 
 type WeekStripProps = {
-  completedDates: string[]
+  completions: Record<string, number>
+  dailySets: number
 }
 
-export function WeekStrip({ completedDates }: WeekStripProps) {
+export function WeekStrip({ completions, dailySets }: WeekStripProps) {
   const today = todayKey()
-  const completed = new Set(completedDates)
+  const goal = Math.max(1, dailySets)
   const days = currentWeekKeys(today)
 
   return (
     <ol className="week-strip" aria-label="This week's completions">
       {days.map((date) => {
-        const done = completed.has(date)
+        const count = completions[date] ?? 0
+        const done = count >= goal
+        const partial = count > 0 && !done
         const isToday = date === today
         const isFuture = date > today
         return (
@@ -22,12 +25,13 @@ export function WeekStrip({ completedDates }: WeekStripProps) {
               className={[
                 'week-dot',
                 done ? 'is-done' : '',
+                partial ? 'is-partial' : '',
                 isToday ? 'is-today' : '',
                 isFuture ? 'is-future' : '',
               ].join(' ')}
-              aria-label={`${weekdayLabel(date)}${done ? ', completed' : ''}${isToday ? ', today' : ''}`}
+              aria-label={`${weekdayLabel(date)}${done ? ', completed' : partial ? `, ${count} of ${goal} sets` : ''}${isToday ? ', today' : ''}`}
             >
-              {done ? '✓' : ''}
+              {done ? '✓' : partial ? count : ''}
             </span>
           </li>
         )

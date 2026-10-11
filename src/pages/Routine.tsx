@@ -79,7 +79,8 @@ function SortableRow({
 }
 
 export function Routine() {
-  const { catalog, routine, setRoutine, addExerciseToCatalog, getExercise } = useAppState()
+  const { catalog, routine, dailySets, setRoutine, setDailySets, addExerciseToCatalog, getExercise } =
+    useAppState()
   const [sheetOpen, setSheetOpen] = useState(false)
 
   const sensors = useSensors(
@@ -118,6 +119,22 @@ export function Routine() {
         <h1>Edit routine</h1>
         <p className="muted">Drag to reorder. Change reps or seconds on each row.</p>
       </header>
+
+      <section className="sets-card">
+        <label className="target-field">
+          <span>Daily sets</span>
+          <input
+            type="number"
+            min={1}
+            value={dailySets}
+            onChange={(event) => setDailySets(Math.max(1, Number(event.target.value) || 1))}
+            aria-describedby="daily-sets-help"
+          />
+        </label>
+        <p id="daily-sets-help" className="muted">
+          How many times you need to complete this routine for the day's streak tick. Defaults to 1.
+        </p>
+      </section>
 
       {routine.length === 0 ? (
         <p className="empty-state">Your default routine is empty. Add an exercise to get started.</p>

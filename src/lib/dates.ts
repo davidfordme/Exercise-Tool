@@ -1,3 +1,5 @@
+const MAX_CREDIT_WINDOW_MS = 24 * 60 * 60 * 1000
+
 export function todayKey(date = new Date()): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -29,6 +31,27 @@ export function currentWeekKeys(today = todayKey()): string[] {
   return Array.from({ length: 7 }, (_, index) =>
     todayKey(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + index)),
   )
+}
+
+export function creditDateKey(startedAt: string, completedAt = new Date()): string {
+  const start = new Date(startedAt)
+  if (Number.isNaN(start.getTime())) return todayKey(completedAt)
+
+  const elapsed = completedAt.getTime() - start.getTime()
+  if (elapsed >= 0 && elapsed <= MAX_CREDIT_WINDOW_MS) {
+    return todayKey(start)
+  }
+  return todayKey(completedAt)
+}
+
+export function datesMeetingGoal(
+  completions: Record<string, number>,
+  dailySets: number,
+): string[] {
+  const goal = Math.max(1, dailySets)
+  return Object.keys(completions)
+    .filter((date) => (completions[date] ?? 0) >= goal)
+    .sort()
 }
 
 export function computeStreak(dates: string[], today = todayKey()): number {

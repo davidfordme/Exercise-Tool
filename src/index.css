@@ -117,6 +117,7 @@ ul {
 .today-card,
 .preview-card,
 .finish-card,
+.sets-card,
 .routine-row,
 .empty-state {
   background: linear-gradient(180deg, var(--card-2), var(--card));
@@ -128,8 +129,21 @@ ul {
 .streak-card,
 .today-card,
 .preview-card,
-.finish-card {
+.finish-card,
+.sets-card {
   padding: 20px;
+}
+
+.sets-card {
+  display: grid;
+  gap: 10px;
+}
+
+.sets-card .target-field {
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .streak-card {
@@ -211,6 +225,12 @@ ul {
 
 .week-dot.is-done {
   background: var(--accent);
+}
+
+.week-dot.is-partial {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-size: 0.75rem;
 }
 
 .week-dot.is-future {

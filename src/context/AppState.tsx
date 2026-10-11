@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
-import { computeStreak, longestStreak, todayKey } from '../lib/dates'
+import { computeStreak, creditDateKey, datesMeetingGoal, longestStreak, todayKey } from '../lib/dates'
 import { createId } from '../lib/ids'
 import { loadState, saveState } from '../lib/storage'
 import type {
@@ -13,19 +13,22 @@ import type {
 type AppContextValue = {
   catalog: ExerciseDefinition[]
   routine: RoutineItem[]
+  completions: Record<string, number>
   completedDates: string[]
+  dailySets: number
   activeWorkout: ActiveWorkout | null
   today: string
+  todayCount: number
   todayCompleted: boolean
   streak: number
   longest: number
   getExercise: (id: string) => ExerciseDefinition | undefined
   setRoutine: (routine: RoutineItem[]) => void
+  setDailySets: (dailySets: number) => void
   addExerciseToCatalog: (exercise: ExerciseDefinition) => void
   startWorkout: () => void
   setActiveWorkout: (workout: ActiveWorkout | null) => void
   completeWorkout: () => void
-  markTodayComplete: (done: boolean) => void
   addWorkoutStep: (exerciseId: string, target: number) => void
 }
 
@@ -39,9 +42,11 @@ function persist(next: PersistedState): PersistedState {
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PersistedState>(() => loadState())
   const today = todayKey()
+  const completedDates = datesMeetingGoal(state.completions, state.dailySets)
 
   const value = useMemo<AppContextValue>(() => {
     const getExercise = (id: string) => state.catalog.find((exercise) => exercise.id === id)
+    const todayCount = state.completions[today] ?? 0
 
     const update = (recipe: (current: PersistedState) => PersistedState) => {
       setState((current) => persist(recipe(current)))
@@ -50,14 +55,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     return {
       catalog: state.catalog,
       routine: state.routine,
-      completedDates: state.completedDates,
+      completions: state.completions,
+      completedDates,
+      dailySets: state.dailySets,
       activeWorkout: state.activeWorkout,
       today,
-      todayCompleted: state.completedDates.includes(today),
-      streak: computeStreak(state.completedDates, today),
-      longest: longestStreak(state.completedDates),
+      todayCount,
+      todayCompleted: todayCount >= state.dailySets,
+      streak: computeStreak(completedDates, today),
+      longest: longestStreak(completedDates),
       getExercise,
       setRoutine: (routine) => update((current) => ({ ...current, routine })),
+      setDailySets: (dailySets) =>
+        update((current) => ({ ...current, dailySets: Math.max(1, Math.floor(dailySets) || 1) })),
       addExerciseToCatalog: (exercise) =>
         update((current) => ({
           ...current,
@@ -83,20 +93,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }),
       setActiveWorkout: (activeWorkout) => update((current) => ({ ...current, activeWorkout })),
       completeWorkout: () =>
-        update((current) => ({
-          ...current,
-          activeWorkout: null,
-          completedDates: current.completedDates.includes(today)
-            ? current.completedDates
-            : [...current.completedDates, today].sort(),
-        })),
-      markTodayComplete: (done) =>
-        update((current) => ({
-          ...current,
-          completedDates: done
-            ? [...new Set([...current.completedDates, today])].sort()
-            : current.completedDates.filter((date) => date !== today),
-        })),
+        update((current) => {
+          if (!current.activeWorkout) return current
+          const date = creditDateKey(current.activeWorkout.startedAt)
+          return {
+            ...current,
+            activeWorkout: null,
+            completions: {
+              ...current.completions,
+              [date]: (current.completions[date] ?? 0) + 1,
+            },
+          }
+        }),
       addWorkoutStep: (exerciseId, target) =>
         update((current) => {
           if (!current.activeWorkout) return current
@@ -111,7 +119,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           }
         }),
     }
-  }, [state, today])
+  }, [completedDates, state, today])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
 }
